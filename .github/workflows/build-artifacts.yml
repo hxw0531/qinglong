@@ -1,0 +1,76 @@
+name: Build Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build"
+        required: false
+        default: "master"
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: "8.3.1"
+
+      - uses: actions/setup-node@v4
+        with:
+          cache: "pnpm"
+
+      - name: Read version
+        id: version
+        run: |
+          VERSION=$(grep '^version:' version.yaml | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build backend
+        run: pnpm build:back
+
+      - name: Build frontend
+        run: pnpm build:front
+
+      - name: Install production dependencies
+        run: |
+          mkdir -p prod_modules
+          cp package.json pnpm-lock.yaml prod_modules/
+          cd prod_modules
+          pnpm install --prod --frozen-lockfile
+
+      - name: Upload frontend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          path: static/dist/
+          retention-days: 30
+
+      - name: Upload backend artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          path: static/build/
+          retention-days: 30
+
+      - name: Upload all static
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          path: static/
+          retention-days: 30
+
+      - name: Upload node_modules (production)
+        uses: actions/upload-artifact@v4
+        with:
+          name: node_modules-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          path: prod_modules/node_modules/
+          retention-days: 30
