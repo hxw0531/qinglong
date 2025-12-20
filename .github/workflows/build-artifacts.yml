@@ -52,9 +52,9 @@ jobs:
 
       - name: Package all files
         run: |
-          mkdir -p release
-          cp -r static/build release/
-          cp -r static/dist release/
+          mkdir -p release/static
+          cp -r static/build release/static/
+          cp -r static/dist release/static/
           cp -r prod_modules/node_modules release/
           cp package.json release/
           cp .env.example release/.env
