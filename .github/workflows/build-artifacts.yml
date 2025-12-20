@@ -50,30 +50,23 @@ jobs:
           cd prod_modules
           pnpm install --prod --frozen-lockfile
 
-      - name: Upload frontend artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-${{ steps.version.outputs.version }}-${{ github.run_number }}
-          path: static/dist/
-          retention-days: 30
+      - name: Package all files
+        run: |
+          mkdir -p release
+          cp -r static/build release/
+          cp -r static/dist release/
+          cp -r prod_modules/node_modules release/
+          cp package.json release/
+          cp .env.example release/.env
+          cp -r shell release/
+          cp -r sample release/
+          cp version.yaml release/
+          cd release
+          tar -czvf ../qinglong-${{ steps.version.outputs.version }}.tar.gz .
 
-      - name: Upload backend artifacts
+      - name: Upload release package
         uses: actions/upload-artifact@v4
         with:
-          name: backend-${{ steps.version.outputs.version }}-${{ github.run_number }}
-          path: static/build/
-          retention-days: 30
-
-      - name: Upload all static
-        uses: actions/upload-artifact@v4
-        with:
-          name: static-${{ steps.version.outputs.version }}-${{ github.run_number }}
-          path: static/
-          retention-days: 30
-
-      - name: Upload node_modules (production)
-        uses: actions/upload-artifact@v4
-        with:
-          name: node_modules-${{ steps.version.outputs.version }}-${{ github.run_number }}
-          path: prod_modules/node_modules/
+          name: qinglong-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          path: qinglong-${{ steps.version.outputs.version }}.tar.gz
           retention-days: 30
